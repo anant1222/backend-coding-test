@@ -1,12 +1,11 @@
 'use strict';
 const express = require('express');
 const app = express();
-const bodyParser = require('body-parser');
-const jsonParser = bodyParser.json();
+app.use(express.json());
 const logger = require('../utils/logger').logs
 module.exports = (db) => {
     app.get('/health', (req, res) => res.send('Healthy'));
-    app.post('/rides', jsonParser, (req, res) => {
+    app.post('/rides', (req, res) => {
         const startLatitude = Number(req.body.start_lat);
         const startLongitude = Number(req.body.start_long);
         const endLatitude = Number(req.body.end_lat);
@@ -54,6 +53,7 @@ module.exports = (db) => {
         
         const result = db.run('INSERT INTO Rides(startLat, startLong, endLat, endLong, riderName, driverName, driverVehicle) VALUES (?, ?, ?, ?, ?, ?, ?)', values, function (err) {
             if (err) {
+                logger.error("app.js::Time:" + moment().format('YYYY/MM/DD HH:MM:SS') + ", API:" + req.originalUrl + 'request:::' + JSON.stringify(req.body) + "::Message:ERROR::::" + err);
                 return res.send({
                     error_code: 'SERVER_ERROR',
                     message: 'Unknown error'
@@ -62,6 +62,7 @@ module.exports = (db) => {
 
             db.all('SELECT * FROM Rides WHERE rideID = ?', this.lastID, function (err, rows) {
                 if (err) {
+                    logger.error("app.js::Time:" + moment().format('YYYY/MM/DD HH:MM:SS') + ", API:" + req.originalUrl + 'request:::' + JSON.stringify(req.body) + "::Message:ERROR::::" + err);
                     return res.send({
                         error_code: 'SERVER_ERROR',
                         message: 'Unknown error'
@@ -74,10 +75,10 @@ module.exports = (db) => {
     });
 
     app.get('/rides', async (req, res) => {
-        logger.info('Hello')
         const {start,limit}= await pagination(req)
         db.all(`SELECT * FROM Rides LIMIT ${limit} OFFSET ${start}`, function (err, rows) {
             if (err) {
+                logger.error("app.js::Time:" + moment().format('YYYY/MM/DD HH:MM:SS') + ", API:" + req.originalUrl + 'request:::' + JSON.stringify(req.query) + "::Message:ERROR::::" + err);
                 return res.send({
                     error_code: 'SERVER_ERROR',
                     message: 'Unknown error'
@@ -98,6 +99,7 @@ module.exports = (db) => {
     app.get('/rides/:id', (req, res) => {
         db.all(`SELECT * FROM Rides WHERE rideID='${req.params.id}'`, function (err, rows) {
             if (err) {
+                logger.error("app.js::Time:" + moment().format('YYYY/MM/DD HH:MM:SS') + ", API:" + req.originalUrl + 'request:::' + JSON.stringify(req.params) + "::Message:ERROR::::" + err);
                 return res.send({
                     error_code: 'SERVER_ERROR',
                     message: 'Unknown error'
@@ -121,6 +123,7 @@ module.exports = (db) => {
 
 
 async function pagination(req){
+    try {
     const limit = req.query.length ||  10;
     let start =  0
     if((req.query.page) &&  (req.query.page != 0 && req.query.page != 1)){
@@ -130,4 +133,7 @@ async function pagination(req){
     console.log('start:::::',start)
     console.log('limit:::::',limit)
     return {start,limit}
+} catch (error) {
+    logger.error("app.js::Time:" + moment().format('YYYY/MM/DD HH:MM:SS') + ", API:" + req.originalUrl + 'request:::' + JSON.stringify(req.query) + "::Message:ERROR::::" + error);
+}
 }

@@ -11,7 +11,7 @@ const consoleConfig = [
 ];
 
 const transport = new DailyRotateFile({
-  filename: './logs/error.log',
+  filename: './logger/error.log',
   datePattern: 'YYYY-MM-DD',
   maxSize: '20m',
   maxFiles: '7d',
