@@ -1,14 +1,11 @@
 'use strict';
-
 const express = require('express');
 const app = express();
-
 const bodyParser = require('body-parser');
 const jsonParser = bodyParser.json();
-
+const logger = require('../utils/logger').logs
 module.exports = (db) => {
     app.get('/health', (req, res) => res.send('Healthy'));
-
     app.post('/rides', jsonParser, (req, res) => {
         const startLatitude = Number(req.body.start_lat);
         const startLongitude = Number(req.body.start_long);
@@ -76,8 +73,10 @@ module.exports = (db) => {
         });
     });
 
-    app.get('/rides', (req, res) => {
-        db.all('SELECT * FROM Rides', function (err, rows) {
+    app.get('/rides', async (req, res) => {
+        logger.info('Hello')
+        const {start,limit}= await pagination(req)
+        db.all(`SELECT * FROM Rides LIMIT ${limit} OFFSET ${start}`, function (err, rows) {
             if (err) {
                 return res.send({
                     error_code: 'SERVER_ERROR',
@@ -118,3 +117,17 @@ module.exports = (db) => {
 
     return app;
 };
+
+
+
+async function pagination(req){
+    const limit = req.query.length ||  10;
+    let start =  0
+    if((req.query.page) &&  (req.query.page != 0 && req.query.page != 1)){
+        req.query.page--
+        start = req.query.page * limit + 1
+    }
+    console.log('start:::::',start)
+    console.log('limit:::::',limit)
+    return {start,limit}
+}
